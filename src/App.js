@@ -16,6 +16,7 @@ function App() {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
   const packageInputRef = useRef(null);
+  const keyInputRef = useRef(null);
 
   // Helper functions
   const arrayBufferToBase64 = (buffer) => {
@@ -346,6 +347,67 @@ function App() {
     updateStatus('✓ Keys exported!', 'success');
   };
 
+  // Import RSA keys from JSON file
+  const importKeys = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        setProcessing(true);
+        updateStatus('Importing RSA keys...', 'info');
+        
+        const keysData = JSON.parse(event.target.result);
+        
+        if (!keysData.publicKey || !keysData.privateKey) {
+          updateStatus('✗ Invalid key file format!', 'error');
+          return;
+        }
+
+        // Import public key
+        const publicKeyBuffer = base64ToArrayBuffer(keysData.publicKey);
+        const publicKey = await window.crypto.subtle.importKey(
+          "spki",
+          publicKeyBuffer,
+          {
+            name: "RSA-OAEP",
+            hash: "SHA-256",
+          },
+          true,
+          ["encrypt"]
+        );
+
+        // Import private key
+        const privateKeyBuffer = base64ToArrayBuffer(keysData.privateKey);
+        const privateKey = await window.crypto.subtle.importKey(
+          "pkcs8",
+          privateKeyBuffer,
+          {
+            name: "RSA-OAEP",
+            hash: "SHA-256",
+          },
+          true,
+          ["decrypt"]
+        );
+
+        setRsaKeyPair({ publicKey, privateKey });
+        setExportedKeys({
+          publicKey: keysData.publicKey,
+          privateKey: keysData.privateKey
+        });
+
+        updateStatus('✓ RSA keys imported successfully!', 'success');
+      } catch (err) {
+        updateStatus(`✗ Error importing keys: ${err.message}`, 'error');
+        console.error('Key import error:', err);
+      } finally {
+        setProcessing(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
     updateStatus(`✓ ${label} copied to clipboard!`, 'success');
@@ -657,6 +719,46 @@ function App() {
                       Decrypt Your File
                     </h3>
 
+                    {/* Import Keys Section */}
+                    {!rsaKeyPair && (
+                      <div className="bg-gradient-to-br from-blue-900/30 to-slate-800/50 rounded-xl p-5 border-2 border-blue-500/50 mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Key className="w-5 h-5 text-blue-400" />
+                          <h4 className="font-semibold text-white">Import RSA Keys</h4>
+                        </div>
+                        <p className="text-blue-200 text-sm mb-3">
+                          To decrypt files, you need to import the RSA key pair that was used for encryption.
+                        </p>
+                        
+                        <input
+                          ref={keyInputRef}
+                          type="file"
+                          accept=".json"
+                          onChange={importKeys}
+                          className="hidden"
+                        />
+                        
+                        <button
+                          onClick={() => keyInputRef.current?.click()}
+                          disabled={processing}
+                          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Import Key File (.json)
+                        </button>
+                        
+                        <div className="mt-3 bg-slate-800/50 rounded-lg p-3">
+                          <div className="flex items-start gap-2 text-xs text-blue-200">
+                            <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <span>
+                              Import the rsa-keypair.json file that was exported during key generation. 
+                              Or generate new keys in the key management section above.
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {!encryptedPackage ? (
                       <div>
                         <div className="bg-slate-700/30 rounded-xl p-8 text-center border-2 border-dashed border-purple-500/30 mb-4">
@@ -736,7 +838,7 @@ function App() {
                               <span className="font-semibold text-sm">Private Key Required</span>
                             </div>
                             <p className="text-amber-200 text-sm mt-2">
-                              Generate RSA keys or import your private key to decrypt this file.
+                              Import your RSA keys using the "Import Key File" button above, or generate new keys in the key management section.
                             </p>
                           </div>
                         )}
