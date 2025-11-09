@@ -399,7 +399,7 @@ If you find this project useful, please consider:
 
 <div align="center">
 
-**Made with ❤️ and 🔐 by Prajwal**
+**Made with ❤️ and 🔐 by Crypto Team**
 
 *Secure today, protected tomorrow*
 
