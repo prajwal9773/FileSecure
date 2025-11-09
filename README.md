@@ -362,14 +362,9 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 ---
 
-## 👤 Author
 
-**Prajwal**
 
-- GitHub: [@prajwal9773](https://github.com/prajwal9773)
-- Project Link: [https://github.com/prajwal9773/FileSecure](https://github.com/prajwal9773/FileSecure)
 
----
 
 ## 🙏 Acknowledgments
 
